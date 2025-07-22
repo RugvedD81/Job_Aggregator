@@ -1,0 +1,35 @@
+
+server:
+  port: 8080
+
+spring:
+  application:
+    name: API-GATEWAY
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: CRAWLER-SERVICE1
+              uri: lb://CRAWLER-SERVICE1
+              predicates:
+                - Path=/jobs/**
+
+            - id: AUTH-SERVICE
+              uri: lb://AUTH-SERVICE
+              predicates:
+                - Path=/auth/**, /login/oauth2/code/**, /oauth2/authorization/**
+
+      cloud:
+        config:
+          enabled: false
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
