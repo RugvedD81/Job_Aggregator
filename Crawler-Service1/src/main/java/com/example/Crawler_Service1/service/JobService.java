@@ -50,9 +50,13 @@ public class JobService {
      */
     public void fetchAndStoreAllJobs() {
         List<Jobs> jobs = new ArrayList<>();
-//        jobs.addAll(fetchFromRemoteOk());
           jobs.addAll(fetchFromArbeitnow());
         jobs.addAll(fetchFromAdzuna());
+        jobs.addAll(fetchFromRemotive());
+        jobs.addAll(fetchFromRemoteOk());
+
+        
+
 
         logger.info("Saving {} jobs to database.", jobs.size());
         jobsRepository.saveAll(jobs);
@@ -75,58 +79,58 @@ public class JobService {
     }
 
 
-//    private List<Jobs> fetchFromRemoteOk(){
-//        List<Jobs> results=new ArrayList<>();
-//        try{
-//            /**
-//             * Calls RemoteOk’s API to get job data in JSON format.
-//             * Parses the JSON response using ObjectMapper.
-//             */
-//            String url="https://remoteok.com/api";
-//            String json=restTemplate.getForObject(url, String.class);
-//            JsonNode root=objectMapper.readTree(json);
-//
-//            /**
-//             * Skips index 0 (since RemoteOk sometimes sends metadata at index 0).
-//             * Loops through each job node in the JSON
-//             */
-//            for (int i = 1; i < root.size(); i++) {
-//                JsonNode node = root.get(i);
-//
-//                /**
-//                 * Creates a new Jobs object for each job found in the JSON.
-//                 * Maps JSON fields to your entity fields.
-//                 * Calls parseTags() to handle the tags as a comma-separated string.
-//                 */
-//                Jobs job = Jobs.builder()
-//                        .id("remoteok-" + node.path("id").asText())
-//                        .site("RemoteOk")
-//                        .position(node.path("position").asText())
-//                        .company(node.path("company").asText())
-//                        .location(node.path("location").asText())
-//                        .url(node.path("url").asText())
-//                        .date(node.path("date").asText())
-//                        .tags(parseTags(node))
-//                        .build();
-//
-//                /**
-//                 * Adds each job to the results list.
-//                 */
-//                results.add(job);
-//            }
-//
-//            /**
-//             * Logs the number of jobs fetched.
-//             * Catches and logs any errors during fetching/parsing.
-//             * Returns the list of jobs.
-//             */
-//            logger.info("Fetched {} jobs from RemoteOk", results.size());
-//        } catch (Exception e) {
-//            logger.error("Error fetching from RemoteOK: {}", e.getMessage());
-//        }
-//        return results;
-//
-//        }
+   private List<Jobs> fetchFromRemoteOk(){
+       List<Jobs> results=new ArrayList<>();
+       try{
+           /**
+            * Calls RemoteOk’s API to get job data in JSON format.
+            * Parses the JSON response using ObjectMapper.
+            */
+           String url="https://remoteok.com/api";
+           String json=restTemplate.getForObject(url, String.class);
+           JsonNode root=objectMapper.readTree(json);
+
+           /**
+            * Skips index 0 (since RemoteOk sometimes sends metadata at index 0).
+            * Loops through each job node in the JSON
+            */
+           for (int i = 1; i < root.size(); i++) {
+               JsonNode node = root.get(i);
+
+               /**
+                * Creates a new Jobs object for each job found in the JSON.
+                * Maps JSON fields to your entity fields.
+                * Calls parseTags() to handle the tags as a comma-separated string.
+                */
+               Jobs job = Jobs.builder()
+                       .id("remoteok-" + node.path("id").asText())
+                       .site("RemoteOk")
+                       .position(node.path("position").asText())
+                       .company(node.path("company").asText())
+                       .location(node.path("location").asText())
+                       .url(node.path("url").asText())
+                       .date(node.path("date").asText())
+                       .tags(parseTags(node))
+                       .build();
+
+               /**
+                * Adds each job to the results list.
+                */
+               results.add(job);
+           }
+
+           /**
+            * Logs the number of jobs fetched.
+            * Catches and logs any errors during fetching/parsing.
+            * Returns the list of jobs.
+            */
+           logger.info("Fetched {} jobs from RemoteOk", results.size());
+       } catch (Exception e) {
+           logger.error("Error fetching from RemoteOK: {}", e.getMessage());
+       }
+       return results;
+
+       }
 
         private List<Jobs> fetchFromArbeitnow(){
         List<Jobs> results=new ArrayList<>();
@@ -192,6 +196,36 @@ public class JobService {
         }
         return results;
 
+    }
+      private List<Jobs> fetchFromRemotive() {
+        List<Jobs> results = new ArrayList<>();
+        try {
+            String url = "https://remotive.com/api/remote-jobs";
+            String json = restTemplate.getForObject(url, String.class);
+
+            JsonNode root = objectMapper.readTree(json);
+            ArrayNode jobsArray = (ArrayNode) root.path("jobs");
+
+            for (JsonNode node : jobsArray) {
+                Jobs job = Jobs.builder()
+                        .id("remotive-" + node.path("id").asText())
+                        .site("Remotive")
+                        .position(node.path("title").asText())
+                        .company(node.path("company_name").asText())
+                        .location(node.path("candidate_required_location").asText())
+                        .url(node.path("url").asText())
+                        .date(node.path("publication_date").asText())
+                        .tags(parseTags(node.path("tags")))
+                        .build();
+
+                results.add(job);
+            }
+
+            logger.info("Fetched {} jobs from Remotive", results.size());
+        } catch (Exception e) {
+            logger.error("Error fetching from Remotive: {}", e.getMessage());
+        }
+        return results;
     }
 
     /**
